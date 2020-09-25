@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Scratch ticket</title>
+    <style>
+        .container{
+        	position:absolute;
+        	left:50%;
+        	top:50%;
+        	margin-left:-200px;
+        	margin-top:-150px;
+        	width:400px;
+        	height:300px;
+        }
+        .content{
+        	width:100%;
+        	height:100%;
+        	background-color:#F08080;
+        	font-size:40px;
+        	line-height:300px;
+        	text-align: center;
+        	user-select: none;			/*避免出现选中时的蓝色背景*/
+        }
+        #canvas{
+        	position:absolute;
+        	left: 0;
+        	top:0;
+        	cursor: pointer;
+        	user-select: none;			/*避免出现选中时的蓝色背景*/
+        }
+    </style>
+</head>
+<body>
+	<div class="container">
+		<div class="content">谢谢惠顾！</div>
+		<canvas id="canvas"></canvas>
+	</div>
+
+<script>
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+
+    //用来记录最近一次的坐标
+    let lastX = 0;		
+    let lastY = 0;
+    
+    //使canvas充满整个父容器
+    let container=document.querySelector(".container");
+ 	canvas.width=window.getComputedStyle(container).getPropertyValue("width").slice(0,-2);
+ 	canvas.height=window.getComputedStyle(container).getPropertyValue("height").slice(0,-2);
+
+ 	//将canvas填充为黑色，并且合成方式为destination-out
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = "destination-out";
+
+    //mousemove时触发的函数
+    function erasure(e) {
+        let curX = e.offsetX;
+        let curY = e.offsetY;
+        ctx.beginPath();
+        ctx.lineCap = "round";
+        ctx.lineWidth = 20;
+        ctx.moveTo(lastX, lastY);		//将笔尖移动到上次的位置
+        ctx.lineTo(curX, curY);			//向当前位置画一条直线
+        ctx.stroke();					//填充路径
+        lastX = curX;					//将当前位置赋值给lastX,lastY
+        lastY = curY;
+    }
+
+
+    canvas.onmousedown = function (e) {
+        lastX = e.offsetX;				//将鼠标按下时在canvas上的坐标设置为最近一次的位置
+        lastY = e.offsetY;
+        canvas.addEventListener('mousemove', erasure);
+    };
+
+    canvas.onmouseup = function () {
+    	let data = ctx.getImageData(0,0,canvas.width,canvas.height).data;	//获取canvas的图像数据
+    	let numPixel=0;				//该变量用于记录被涂抹过的像素的个数
+    	const totalPixel=data.length/4;		//像素点的个数，data中4个项实际记录一个像素点(红，黄，蓝，透明度)
+    	for(let i=0;i<totalPixel;i++){		//遍历所有像素点，如果透明度为0，则numPixel加1
+    		if(data[i*4+3]===0){
+    			numPixel++;
+    		}
+    	}
+        if (numPixel >= totalPixel*0.3) {		//当已涂抹的像素的个数大于中像素个数的0.3倍，则涂抹整个canvas
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        canvas.removeEventListener('mousemove', erasure)	//解除mousemove上绑定的事件函数
+    };
+</script>
+</body>
+</html>
